@@ -47,3 +47,29 @@ Future<void> initCurrency() async {
       print("Error loading exchange rates: $e");
     }
   }
+
+  // Cập nhật tỉ giá nếu có mạng
+  updateExchangeRates();
+}
+
+// Cập nhật tỉ giá từ API
+Future<void> updateExchangeRates() async {
+  try {
+    // Sử dụng API miễn phí để lấy tỉ giá
+    final response = await http.get(
+        Uri.parse('https://open.er-api.com/v6/latest/VND')
+    ).timeout(Duration(seconds: 5));
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data.containsKey('rates')) {
+        final Map<String, dynamic> rates = data['rates'];
+
+        // Cập nhật tỉ giá VND sang các loại tiền khác
+        for (String code in _exchangeRates.keys) {
+          if (rates.containsKey(code) && code != 'VND') {
+            // Tỉ giá từ VND sang đồng tiền khác
+            _exchangeRates[code] = rates[code];
+          }
+        }
+
