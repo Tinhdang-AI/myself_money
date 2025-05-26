@@ -25,3 +25,28 @@ class MessageUtils {
       ),
     );
   }
+  
+  /// Shows an error message with a red background and error icon
+  static void showErrorMessage(BuildContext context, String message) {
+    // Clear any existing SnackBars to prevent queue issues
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3), // Increased duration for better visibility
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
