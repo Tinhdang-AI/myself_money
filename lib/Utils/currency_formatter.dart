@@ -73,3 +73,17 @@ Future<void> updateExchangeRates() async {
           }
         }
 
+        // Lưu vào SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('exchangeRates', jsonEncode(_exchangeRates));
+
+        // Cập nhật tỉ giá hiện tại
+        _exchangeRate = _exchangeRates[_currencyCode] ?? 1.0;
+        await prefs.setDouble('exchangeRate', _exchangeRate);
+      }
+    }
+  } catch (e) {
+    print("Error updating exchange rates: $e");
+    // Sử dụng giá trị sẵn có nếu không thể cập nhật
+  }
+}
