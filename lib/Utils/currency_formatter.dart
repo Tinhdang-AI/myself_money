@@ -87,3 +87,17 @@ Future<void> updateExchangeRates() async {
     // Sử dụng giá trị sẵn có nếu không thể cập nhật
   }
 }
+
+// Phương thức cập nhật đơn vị tiền tệ
+Future<void> updateCurrency(String code, String symbol) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('currencySymbol', symbol);
+  await prefs.setString('currencyCode', code);
+
+  // Cập nhật tỉ giá cho đồng tiền mới
+  _exchangeRate = _exchangeRates[code] ?? 1.0;
+  await prefs.setDouble('exchangeRate', _exchangeRate);
+
+  _currencySymbol = symbol;
+  _currencyCode = code;
+}
