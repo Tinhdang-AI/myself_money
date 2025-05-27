@@ -101,3 +101,93 @@ Future<void> updateCurrency(String code, String symbol) async {
   _currencySymbol = symbol;
   _currencyCode = code;
 }
+
+// Lấy symbol hiện tại
+String getCurrentSymbol() {
+  return _currencySymbol;
+}
+
+// Lấy mã tiền tệ hiện tại
+String getCurrentCode() {
+  return _currencyCode;
+}
+
+// Chuyển đổi giá trị từ VND sang đơn vị tiền tệ hiện tại
+double convertFromVND(double amountInVND) {
+  if (_currencyCode == 'VND') return amountInVND;
+  return amountInVND * _exchangeRate;
+}
+
+// Chuyển đổi giá trị từ đơn vị tiền tệ hiện tại sang VND
+double convertToVND(double amountInCurrentCurrency) {
+  if (_currencyCode == 'VND') return amountInCurrentCurrency; // Không cần chuyển đổi nếu là VND
+  return amountInCurrentCurrency / _exchangeRate;
+}
+
+// 2. Tạo widget định dạng input tiền tệ với tỉ giá hiện tại
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    bool useDecimals = _currencyCode == 'USD' || _currencyCode == 'EUR' ||
+        _currencyCode == 'GBP' || _currencyCode == 'SGD' ||
+        _currencyCode == 'MYR';
+
+    String digitsOnly;
+    if (useDecimals) {
+      digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d.]'), '');
+      int decimalCount = '.'.allMatches(digitsOnly).length;
+      if (decimalCount > 1) {
+        int firstDecimalIndex = digitsOnly.indexOf('.');
+        digitsOnly = digitsOnly.substring(0, firstDecimalIndex + 1) +
+            digitsOnly.substring(firstDecimalIndex + 1).replaceAll('.', '');
+      }
+    } else {
+      digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    }
+
+    if (digitsOnly.isEmpty) {
+      return TextEditingValue(text: '', selection: TextSelection.collapsed(offset: 0));
+    }
+
+    double value;
+    try {
+      value = double.parse(digitsOnly);
+    } catch (e) {
+      return oldValue; // Trả về giá trị cũ nếu không phân tích được
+    }
+
+    // Giới hạn tối đa
+    const double maxValue = 1000000000000; // 1 nghìn tỷ
+    if (value > maxValue) {
+      value = maxValue;
+    }
+
+    String formattedValue;
+    if (useDecimals) {
+      if (digitsOnly.contains('.')) {
+        List<String> parts = digitsOnly.split('.');
+        String wholePart = parts[0];
+        String decimalPart = parts.length > 1 ? parts[1] : '';
+        if (decimalPart.length > 2) {
+          decimalPart = decimalPart.substring(0, 2);
+        }
+        wholePart = NumberFormat('#,###', 'en_US').format(double.parse(wholePart));
+        formattedValue = '$wholePart.$decimalPart';
+      } else {
+        formattedValue = NumberFormat('#,###', 'en_US').format(value);
+      }
+    } else {
+      formattedValue = formatCurrency.format(value);
+    }
+
+    return TextEditingValue(
+      text: formattedValue,
+      selection: TextSelection.collapsed(offset: formattedValue.length),
+    );
+  }
+
+}
