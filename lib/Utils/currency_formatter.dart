@@ -191,3 +191,91 @@ class CurrencyInputFormatter extends TextInputFormatter {
   }
 
 }
+
+// 3. Hàm chuyển đổi từ chuỗi định dạng tiền tệ sang số
+double parseFormattedCurrency(String formattedAmount) {
+  if (formattedAmount.isEmpty) return 0;
+
+  // Xác định xem đồng tiền có dùng số thập phân không
+  bool useDecimals = _currencyCode == 'USD' || _currencyCode == 'EUR' ||
+      _currencyCode == 'GBP' || _currencyCode == 'SGD' ||
+      _currencyCode == 'MYR';
+
+  String cleanedAmount;
+  if (useDecimals) {
+    // Giữ lại số và dấu thập phân cho đồng tiền có số thập phân
+    cleanedAmount = formattedAmount.replaceAll(RegExp(r'[^\d.]'), '');
+  } else {
+    // Chỉ giữ lại số cho đồng tiền không dùng số thập phân
+    cleanedAmount = formattedAmount.replaceAll(RegExp(r'[^\d]'), '');
+  }
+
+  return cleanedAmount.isEmpty ? 0 : double.parse(cleanedAmount);
+}
+
+// 4. Hàm định dạng số thành chuỗi tiền tệ có đơn vị
+String formatCurrencyWithSymbol(double amountInVND) {
+  try {
+    // Chuyển đổi giá trị từ VND sang đơn vị tiền tệ hiện tại
+    double convertedAmount = convertFromVND(amountInVND);
+
+    // Định dạng khác nhau cho các loại tiền tệ
+    String formattedAmount;
+
+    // Kiểm tra loại tiền tệ để định dạng phù hợp
+    if (_currencyCode == 'USD' || _currencyCode == 'EUR' ||
+        _currencyCode == 'GBP' || _currencyCode == 'SGD' ||
+        _currencyCode == 'MYR') {
+      // Dùng hai chữ số thập phân cho USD, EUR, GBP, SGD, MYR
+      formattedAmount = NumberFormat('#,##0.00', 'en_US').format(convertedAmount);
+    } else if (_currencyCode == 'JPY' || _currencyCode == 'KRW') {
+      // Không dùng chữ số thập phân cho JPY, KRW
+      formattedAmount = formatCurrency.format(convertedAmount.round());
+    } else {
+      // Mặc định cho các loại tiền tệ khác (VND)
+      formattedAmount = formatCurrency.format(convertedAmount.round());
+    }
+
+    // Trả về chuỗi tiền tệ với đơn vị
+    // Định dạng ký hiệu tiền tệ theo vị trí thích hợp
+    if (_currencyCode == 'USD') {
+      return '$_currencySymbol$formattedAmount'; // $1,234.56
+    } else {
+      // Mặc định cho các loại tiền tệ khác
+      return '$formattedAmount $_currencySymbol'; // 1,234 đ
+    }
+  } catch (e) {
+    print("Lỗi khi định dạng tiền tệ: $e");
+    // Trả về một giá trị mặc định nếu có lỗi
+    return '0 $_currencySymbol';
+  }
+}
+
+NumberFormat getCurrentCurrencyFormatter() {
+  if (_currencyCode == 'USD' || _currencyCode == 'EUR' || _currencyCode == 'GBP' || _currencyCode == 'SGD' || _currencyCode == 'MYR') {
+    return NumberFormat('#,##0.00', 'en_US');
+  } else {
+    return NumberFormat('#,###', 'vi_VN');
+  }
+}
+
+
+// 5. Phiên bản bổ sung hỗ trợ định dạng số âm
+String formatCurrencyWithSign(double amountInVND) {
+  String sign = amountInVND >= 0 ? "+" : "-";
+  return '$sign${formatCurrencyWithSymbol(amountInVND.abs())}';
+}
+
+// 6. Danh sách các đơn vị tiền tệ phổ biến để người dùng lựa chọn
+List<Map<String, String>> commonCurrencies = [
+  {'code': 'VND', 'symbol': 'đ', 'name': 'Việt Nam Đồng'},
+  {'code': 'USD', 'symbol': '\$', 'name': 'Đô la Mỹ'},
+  {'code': 'EUR', 'symbol': '€', 'name': 'Euro'},
+  {'code': 'GBP', 'symbol': '£', 'name': 'Bảng Anh'},
+  {'code': 'JPY', 'symbol': '¥', 'name': 'Yên Nhật'},
+  {'code': 'CNY', 'symbol': '¥', 'name': 'Nhân dân tệ'},
+  {'code': 'KRW', 'symbol': '₩', 'name': 'Won Hàn Quốc'},
+  {'code': 'SGD', 'symbol': 'S\$', 'name': 'Đô la Singapore'},
+  {'code': 'THB', 'symbol': '฿', 'name': 'Baht Thái'},
+  {'code': 'MYR', 'symbol': 'RM', 'name': 'Ringgit Malaysia'},
+];
