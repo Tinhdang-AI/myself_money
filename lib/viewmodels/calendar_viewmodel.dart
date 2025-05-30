@@ -56,3 +56,101 @@ class CalendarViewModel extends ChangeNotifier {
 
     return text;
   }
+
+  // Initialize with current date data
+  Future<void> initialize() async {
+    _selectedDay = DateTime.now();
+    _focusedDay = DateTime.now();
+    await loadMonthData();
+    await loadSelectedDayData();
+  }
+
+  // Load month data
+  Future<void> loadMonthData() async {
+    _setLoading(true);
+
+    try {
+      final int month = _focusedDay.month;
+      final int year = _focusedDay.year;
+
+      // Clear the previous map to avoid stale data
+      _eventsByDay = {};
+
+      final expenses = await _databaseService.getExpensesByMonthFuture(month, year);
+
+      // Group transactions by day
+      Map<DateTime, List<ExpenseModel>> eventsMap = {};
+
+      for (var expense in expenses) {
+        // Ensure consistent date normalization (strip time part)
+        final date = DateTime(expense.date.year, expense.date.month, expense.date.day);
+
+        if (eventsMap[date] == null) {
+          eventsMap[date] = [];
+        }
+        eventsMap[date]!.add(expense);
+      }
+
+      _eventsByDay = eventsMap;
+      notifyListeners();
+    } catch (e) {
+      _setError(tr('error_load_monthly', [e.toString()]));
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Load selected day data
+  Future<void> loadSelectedDayData() async {
+    _setLoading(true);
+
+    try {
+      _selectedDayExpenses = [];
+      _incomeTotal = 0;
+      _expenseTotal = 0;
+      _netTotal = 0;
+
+      final expenses = await _databaseService.getExpensesByDateFuture(_selectedDay);
+
+      _selectedDayExpenses = expenses;
+      _calculateTotals();
+      notifyListeners();
+    } catch (e) {
+      _setError(tr('error_load_report', [e.toString()]));
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Calculate totals for selected day
+  void _calculateTotals() {
+    double income = 0;
+    double expense = 0;
+
+    for (var item in _selectedDayExpenses) {
+      if (item.isExpense) {
+        expense += item.amount;
+      } else {
+        income += item.amount;
+      }
+    }
+
+    _incomeTotal = income;
+    _expenseTotal = expense;
+    _netTotal = income - expense;
+  }
+
+  // Change month
+  Future<void> changeMonth(int step) async {
+    _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + step, 1);
+
+    // If selected day is outside the new month, adjust it
+    if (_selectedDay.month != _focusedDay.month || _selectedDay.year != _focusedDay.year) {
+      _selectedDay = DateTime(_focusedDay.year, _focusedDay.month,
+          min(_selectedDay.day, _getDaysInMonth(_focusedDay.year, _focusedDay.month)));
+    }
+
+    notifyListeners();
+    await loadMonthData();
+    await loadSelectedDayData();
+  }
