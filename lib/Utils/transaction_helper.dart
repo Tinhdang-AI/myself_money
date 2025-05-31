@@ -53,3 +53,77 @@ class TransactionHelper {
         displayExpense,
         categoryList,
       );
+
+      if (result != null && result.updated) {
+        // Xác định xem có nên giữ lại khóa gốc nếu đây là một danh mục hệ thống
+        String updatedCategory = result.category;
+        String categoryIcon = result.categoryIcon;
+
+        // Tìm danh mục gốc từ danh sách
+        for (var category in categoryList) {
+          // Kiểm tra nếu đây là danh mục được chọn
+          String catName = category['name'] ?? '';
+          String displayName = catName.startsWith('category_')
+              ? context.tr(catName)
+              : catName;
+
+          if (displayName == result.category) {
+            // Nếu tìm thấy, sử dụng tên khóa gốc thay vì tên hiển thị
+            updatedCategory = catName;
+            break;
+          }
+        }
+
+        // Tạo expense đã cập nhật
+        final updatedExpense = expense.copyWith(
+          note: result.note,
+          amount: result.amount,
+          date: result.date,
+          category: updatedCategory,
+          categoryIcon: categoryIcon,
+        );
+
+        final success = await _updateTransactionInViewModel(viewModel, updatedExpense);
+
+        if (success) {
+          // Wait a bit for animations to complete and data to update
+          await Future.delayed(Duration(milliseconds: 300));
+
+          if (context.mounted) {
+            String type = updatedExpense.isExpense
+                ? context.tr('expense')
+                : context.tr('income');
+
+            // Use MessageUtils instead of ScaffoldMessenger
+            MessageUtils.showSuccessMessage(
+                context,
+                context.tr('transaction_updated', [type])
+            );
+          }
+
+          // Call optional success callback
+          if (onEditSuccess != null) {
+            await onEditSuccess(updatedExpense);
+          }
+        } else {
+          // Display error message if update fails
+          if (context.mounted) {
+            // Use MessageUtils instead of ScaffoldMessenger
+            MessageUtils.showErrorMessage(
+                context,
+                context.tr('update_error')
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print("Error editing transaction: $e");
+      if (context.mounted) {
+        // Use MessageUtils instead of ScaffoldMessenger
+        MessageUtils.showErrorMessage(
+            context,
+            "${context.tr('error')}: ${e.toString()}"
+        );
+      }
+    }
+  }

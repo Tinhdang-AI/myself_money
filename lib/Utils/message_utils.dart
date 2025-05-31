@@ -162,3 +162,25 @@ class MessageUtils {
       ),
     );
   }
+
+  /// Shows a loading dialog
+  static Future<void> showLoadingDialog(BuildContext context, {String message = 'Đang xử lý...'}) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.orange),
+              SizedBox(height: 20),
+              Text(message),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
