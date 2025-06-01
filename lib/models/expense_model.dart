@@ -20,3 +20,17 @@ class ExpenseModel {
     required this.date,
     required this.isExpense,
   });
+  
+    factory ExpenseModel.fromFirestore(DocumentSnapshot doc) {
+    Map data = doc.data() as Map<String, dynamic>;
+    return ExpenseModel(
+      id: doc.id,
+      userId: data['userId'] ?? '',
+      note: data['note'] ?? '',
+      amount: (data['amount'] ?? 0).toDouble(),
+      category: data['category'] ?? '',
+      categoryIcon: data['categoryIcon'] ?? '',
+      date: (data['date'] as Timestamp).toDate(),
+      isExpense: data['isExpense'] ?? true,
+    );
+  }
