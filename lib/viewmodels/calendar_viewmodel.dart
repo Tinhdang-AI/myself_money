@@ -153,7 +153,8 @@ class CalendarViewModel extends ChangeNotifier {
     await loadMonthData();
     await loadSelectedDayData();
   }
-// Get days in month
+
+  // Get days in month
   int _getDaysInMonth(int year, int month) {
     return DateTime(year, month + 1, 0).day;
   }
@@ -223,3 +224,60 @@ class CalendarViewModel extends ChangeNotifier {
       _setLoading(false);
     }
   }
+
+
+  // Delete transaction
+  Future<bool> deleteTransaction(ExpenseModel expense) async {
+    try {
+      _setLoading(true);
+
+      final result = await TransactionUtils.deleteTransaction(expense.id, _databaseService);
+
+      if (result) {
+        // Completely clear memory and reload from database
+        _eventsByDay.clear();
+        _selectedDayExpenses.clear();
+
+        // Reload all data
+        await loadMonthData();
+        await loadSelectedDayData();
+
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError(tr('delete_error'));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllCategories() async {
+    try {
+      return await _databaseService.getCategories();
+    } catch (e) {
+      print("Error getting categories in viewmodel: $e");
+      return [];
+    }
+  }
+
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String? message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+}
+
+typedef TransactionUpdateCallback = void Function(ExpenseModel updatedExpense);
