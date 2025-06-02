@@ -127,3 +127,107 @@ class TransactionHelper {
       }
     }
   }
+
+  /// Internal method to handle transaction deletion
+  static Future<void> _deleteTransaction<T>(
+      BuildContext context,
+      ExpenseModel expense,
+      T viewModel,
+      Future<void> Function(ExpenseModel)? onDeleteSuccess,
+      ) async {
+    // Show delete confirmation
+    final confirmed = await TransactionUtils.showDeleteConfirmation(context, expense);
+
+    if (confirmed == true) {
+      try {
+        final success = await _deleteTransactionInViewModel(viewModel, expense);
+
+        if (success) {
+          // Wait a bit for animations to complete and data to update
+          await Future.delayed(Duration(milliseconds: 300));
+
+          // Display success message
+          if (context.mounted) {
+            String type = expense.isExpense
+                ? context.tr('expense')
+                : context.tr('income');
+
+            // Use MessageUtils instead of ScaffoldMessenger
+            MessageUtils.showSuccessMessage(
+                context,
+                context.tr('transaction_deleted', [type])
+            );
+          }
+
+          // Call optional success callback
+          if (onDeleteSuccess != null) {
+            await onDeleteSuccess(expense);
+          }
+        } else {
+          // Display error message if deletion fails
+          if (context.mounted) {
+            // Use MessageUtils instead of ScaffoldMessenger
+            MessageUtils.showErrorMessage(
+                context,
+                context.tr('delete_error')
+            );
+          }
+        }
+      } catch (e) {
+        print("Error deleting transaction: $e");
+        if (context.mounted) {
+          // Use MessageUtils instead of ScaffoldMessenger
+          MessageUtils.showErrorMessage(
+              context,
+              "${context.tr('error')}: ${e.toString()}"
+          );
+        }
+      }
+    }
+  }
+
+  /// Helper method to get categories from different view model types
+  static Future<List<Map<String, dynamic>>> _getCategoriesFromViewModel<T>(T viewModel) async {
+    if (viewModel is SearchViewModel) {
+      return await viewModel.getAllCategories();
+    } else if (viewModel is CalendarViewModel) {
+      return await viewModel.getAllCategories();
+    } else if (viewModel is ReportViewModel) {
+      return await viewModel.getAllCategories();
+    } else {
+      // Default empty categories list for unsupported view models
+      print("Warning: Getting categories from unsupported view model type: ${viewModel.runtimeType}");
+      return [];
+    }
+  }
+
+  /// Helper method to update transaction in different view model types
+  static Future<bool> _updateTransactionInViewModel<T>(T viewModel, ExpenseModel expense) async {
+    if (viewModel is SearchViewModel) {
+      return await viewModel.editTransaction(expense);
+    } else if (viewModel is CalendarViewModel) {
+      return await viewModel.editTransaction(expense, (e) {});
+    } else if (viewModel is ReportViewModel) {
+      return await viewModel.editTransaction(expense);
+    } else {
+      // Default failure for unsupported view models
+      print("Warning: Updating transaction in unsupported view model type: ${viewModel.runtimeType}");
+      return false;
+    }
+  }
+
+  /// Helper method to delete transaction in different view model types
+  static Future<bool> _deleteTransactionInViewModel<T>(T viewModel, ExpenseModel expense) async {
+    if (viewModel is SearchViewModel) {
+      return await viewModel.deleteTransaction(expense);
+    } else if (viewModel is CalendarViewModel) {
+      return await viewModel.deleteTransaction(expense);
+    } else if (viewModel is ReportViewModel) {
+      return await viewModel.deleteTransaction(expense);
+    } else {
+      // Default failure for unsupported view models
+      print("Warning: Deleting transaction in unsupported view model type: ${viewModel.runtimeType}");
+      return false;
+    }
+  }
+}
