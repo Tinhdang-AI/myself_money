@@ -154,3 +154,130 @@ class CalendarViewModel extends ChangeNotifier {
     await loadMonthData();
     await loadSelectedDayData();
   }
+// Get days in month
+  int _getDaysInMonth(int year, int month) {
+    return DateTime(year, month + 1, 0).day;
+  }
+
+  // Helper function for min value
+  int min(int a, int b) {
+    return a < b ? a : b;
+  }
+
+  // Select a day
+  Future<void> selectDay(DateTime day) async {
+    _selectedDay = day;
+    notifyListeners();
+    await loadSelectedDayData();
+  }
+
+  // Select date with date picker
+  Future<void> selectDate(DateTime? date) async {
+    if (date == null) return;
+
+    _selectedDay = date;
+
+    // If month changes, update focused day and reload month data
+    if (date.month != _focusedDay.month || date.year != _focusedDay.year) {
+      _focusedDay = DateTime(date.year, date.month, 1);
+      await loadMonthData();
+    }
+
+    notifyListeners();
+    await loadSelectedDayData();
+  }
+
+  // Get expenses for a specific day
+  List<ExpenseModel> getExpensesForDay(DateTime day) {
+    final date = DateTime(day.year, day.month, day.day);
+    return _eventsByDay[date] ?? [];
+  }
+
+  // Edit transaction
+  Future<bool> editTransaction(ExpenseModel expense, TransactionUpdateCallback onSuccess) async {
+    try {
+      _setLoading(true);
+
+      // Step 1: Update the transaction in the database
+      final result = await TransactionUtils.editTransaction(expense, _databaseService);
+
+      if (result.success && result.updatedExpense != null) {
+        final updatedExpense = result.updatedExpense!;
+
+        _eventsByDay.clear();
+        _selectedDayExpenses.clear();
+
+        await loadMonthData();
+        await loadSelectedDayData();
+
+        onSuccess(updatedExpense);
+
+        notifyListeners();
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError(tr('update_error'));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+
+  // Delete transaction
+  Future<bool> deleteTransaction(ExpenseModel expense) async {
+    try {
+      _setLoading(true);
+
+      final result = await TransactionUtils.deleteTransaction(expense.id, _databaseService);
+
+      if (result) {
+        // Completely clear memory and reload from database
+        _eventsByDay.clear();
+        _selectedDayExpenses.clear();
+
+        // Reload all data
+        await loadMonthData();
+        await loadSelectedDayData();
+
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError(tr('delete_error'));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllCategories() async {
+    try {
+      return await _databaseService.getCategories();
+    } catch (e) {
+      print("Error getting categories in viewmodel: $e");
+      return [];
+    }
+  }
+
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String? message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+}
+
+typedef TransactionUpdateCallback = void Function(ExpenseModel updatedExpense);
