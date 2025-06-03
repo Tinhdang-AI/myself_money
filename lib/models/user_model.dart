@@ -16,3 +16,28 @@ class UserModel {
     this.profileImageUrl,
     this.currency,
   });
+  
+    factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+    return UserModel(
+      id: doc.id,
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      profileImageUrl: data['profileImageUrl'],
+      currency: data['currency'] as Map<String, dynamic>?,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'email': email,
+      'createdAt': Timestamp.fromDate(createdAt),
+      if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+      if (currency != null) 'currency': currency,
+    };
+  }
