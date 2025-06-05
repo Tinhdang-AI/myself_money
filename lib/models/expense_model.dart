@@ -34,3 +34,15 @@ class ExpenseModel {
       isExpense: data['isExpense'] ?? true,
     );
   }
+
+ Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'note': note,
+      'amount': amount,
+      'category': category,
+      'categoryIcon': categoryIcon,
+      'date': Timestamp.fromDate(date),
+      'isExpense': isExpense,
+    };
+  }
