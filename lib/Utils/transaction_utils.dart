@@ -191,3 +191,52 @@ class TransactionUtils {
                       ],
                     ),
 
+ SizedBox(height: 16),
+
+                    // Note field
+                    TextField(
+                      controller: noteController,
+                      style: TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        labelText: context.tr('note'),
+                      ),
+                    ),
+
+                    SizedBox(height: 16),
+
+                    // Amount field
+                    TextField(
+                      controller: amountController,
+                      style: TextStyle(color: Colors.black),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: context.tr('amount'),
+                        suffix: Text(getCurrentSymbol(), style: TextStyle(color: Colors.black)),
+                      ),
+                      inputFormatters: [
+                        CurrencyInputFormatter(),
+                      ],
+                    ),
+
+                    SizedBox(height: 16),
+
+                    // Date picker
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now().add(Duration(days: 365)),
+                          builder: (context, child) {
+                            return Theme(
+                              data: ThemeData.light().copyWith(
+                                colorScheme: ColorScheme.light(
+                                  primary: Colors.orange,
+                                  onPrimary: Colors.white,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
