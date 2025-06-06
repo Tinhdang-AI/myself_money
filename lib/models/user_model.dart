@@ -41,3 +41,23 @@ class UserModel {
       if (currency != null) 'currency': currency,
     };
   }
+  
+// Create a copy with changes
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    DateTime? createdAt,
+    String? profileImageUrl,
+    Map<String, dynamic>? currency,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      currency: currency ?? this.currency,
+    );
+  }
+}
