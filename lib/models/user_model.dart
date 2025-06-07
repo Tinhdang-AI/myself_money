@@ -61,3 +61,15 @@ class UserModel {
     );
   }
 }
+
+// Model for category
+class CategoryModel {
+  final String label;
+  final int iconCode;
+  final String fontFamily;
+
+  CategoryModel({
+    required this.label,
+    required this.iconCode,
+    this.fontFamily = 'MaterialIcons',
+  });
