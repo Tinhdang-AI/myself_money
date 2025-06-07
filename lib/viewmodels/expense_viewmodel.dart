@@ -295,3 +295,320 @@ class ExpenseViewModel extends ChangeNotifier {
       if (currentUser == null) return;
 
       String userId = currentUser.uid;
+
+      // Get default categories
+      final defaultExpenseCategories = _getDefaultExpenseCategories();
+      final defaultIncomeCategories = _getDefaultIncomeCategories();
+
+      // Convert expense categories to serializable format
+      List<Map<String, dynamic>> serializableExpenseCategories = defaultExpenseCategories.map((category) {
+        return {
+          "label": category["labelKey"], // Store the key, not the translated value
+          "iconCode": (category["icon"] as IconData).codePoint,
+          "fontFamily": "MaterialIcons"
+        };
+      }).toList();
+
+      // Convert income categories to serializable format
+      List<Map<String, dynamic>> serializableIncomeCategories = defaultIncomeCategories.map((category) {
+        return {
+          "label": category["labelKey"], // Store the key, not the translated value
+          "iconCode": (category["icon"] as IconData).codePoint,
+          "fontFamily": "MaterialIcons"
+        };
+      }).toList();
+
+      // Save to Firestore
+      await _firestore.collection('users').doc(userId).set({
+        'expenseCategories': serializableExpenseCategories,
+        'incomeCategories': serializableIncomeCategories,
+        'isDefaultCategoriesSaved': true,
+        'lastUpdated': FieldValue.serverTimestamp()
+      }, SetOptions(merge: true));
+    } catch (e) {
+      _setError(_tr('error_default_categories').replaceAll('{0}', e.toString()));
+    }
+  }
+
+  // Toggle edit mode
+  void toggleEditMode() {
+    _isEditMode = !_isEditMode;
+    notifyListeners();
+  }
+
+  // Add a new category
+  Future<bool> addCategory(String name, IconData icon, bool isExpense) async {
+    // Remove extra whitespace and convert to lowercase for comparison
+    name = name.trim();
+    String nameLower = name.toLowerCase();
+
+    // Select the appropriate category list
+    List<Map<String, dynamic>> targetList = isExpense
+        ? _expenseCategories
+        : _incomeCategories;
+
+    // Check if category already exists (case insensitive)
+    bool categoryExists = targetList.any(
+            (category) => category["label"].toString().toLowerCase() == nameLower
+    );
+
+    if (categoryExists) {
+      _setError(_tr('category_exists'));
+      return false;
+    }
+
+    if (name.isEmpty) {
+      _setError(_tr('enter_category_name'));
+      return false;
+    }
+
+    try {
+      String editLabel = _tr('category_edit');
+
+      // Remove "Edit" entry to add it last
+      targetList.removeWhere((element) => element["label"] == editLabel);
+
+      // Add new category with explicit Map<String, Object> casting
+      Map<String, Object> newCategory = {
+        "icon": icon,
+        "label": name,
+        "labelKey": name,  // For custom categories, key is the same as label
+      };
+
+      targetList.add(newCategory);
+
+      // Add "Edit" entry back with explicit casting
+      Map<String, Object> editCategory = {
+        "icon": Icons.build,
+        "label": editLabel,
+        "labelKey": "category_edit"
+      };
+
+      targetList.add(editCategory);
+
+      if (isExpense) {
+        _expenseCategories = targetList;
+      } else {
+        _incomeCategories = targetList;
+      }
+
+      // Save changes to Firebase
+      await _saveCategoriesToFirebase();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(_tr('error_add_category').replaceAll('{0}', e.toString()));
+      return false;
+    }
+  }
+
+  // Delete a category
+  Future<bool> deleteCategory(int index, bool isExpense) async {
+    _setLoading(false);
+
+    try {
+      List<Map<String, dynamic>> targetList = isExpense ? _expenseCategories : _incomeCategories;
+
+      // Don't allow deleting "Edit" category
+      String editLabel = _tr('category_edit');
+      if (targetList[index]["label"] == editLabel) {
+        return false;
+      }
+
+      targetList.removeAt(index);
+
+      if (isExpense) {
+        _expenseCategories = targetList;
+      } else {
+        _incomeCategories = targetList;
+      }
+
+      // Save changes to Firebase
+      await _saveCategoriesToFirebase();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(_tr('error_delete_category').replaceAll('{0}', e.toString()));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Reorder category method
+  Future<bool> reorderCategory(int oldIndex, int newIndex, bool isExpense) async {
+    try {
+      // Chọn danh sách đúng
+      List<Map<String, dynamic>> targetList = isExpense ? _expenseCategories : _incomeCategories;
+
+      // Tách category_edit nếu có
+      final editIndex = targetList.indexWhere((cat) => cat["labelKey"] == "category_edit");
+      Map<String, dynamic>? editCategory;
+      if (editIndex != -1) {
+        editCategory = targetList.removeAt(editIndex);
+      }
+
+      // Xử lý di chuyển bình thường
+      final movedCategory = targetList.removeAt(oldIndex);
+      if (newIndex > oldIndex) newIndex -= 1;
+      targetList.insert(newIndex, movedCategory);
+
+      // Đảm bảo "category_edit" luôn ở cuối
+      if (editCategory != null) {
+        targetList.add(editCategory);
+      }
+
+      // Gán lại danh sách
+      if (isExpense) {
+        _expenseCategories = targetList;
+      } else {
+        _incomeCategories = targetList;
+      }
+
+      // Lưu và cập nhật
+      await _saveCategoriesToFirebase();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(_tr('error_save_category').replaceAll('{0}', e.toString()));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Save categories to Firebase
+  Future<void> _saveCategoriesToFirebase() async {
+    _setLoading(false);
+
+    try {
+      User? currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        _setLoading(false);
+        return;
+      }
+
+      String userId = currentUser.uid;
+
+      // Convert expense categories to serializable format with explicit type
+      List<Map<String, Object>> serializableExpenseCategories = _expenseCategories.map((category) {
+        IconData icon = category["icon"] as IconData;
+        return {
+          "label": category["labelKey"] as String, // Use the labelKey for storage
+          "iconCode": icon.codePoint,
+          "fontFamily": "MaterialIcons"
+        };
+      }).toList();
+
+      // Convert income categories to serializable format with explicit type
+      List<Map<String, Object>> serializableIncomeCategories = _incomeCategories.map((category) {
+        IconData icon = category["icon"] as IconData;
+        return {
+          "label": category["labelKey"] as String, // Use the labelKey for storage
+          "iconCode": icon.codePoint,
+          "fontFamily": "MaterialIcons"
+        };
+      }).toList();
+
+      // Save to Firestore with explicit Map<String, Object> type
+      await _firestore.collection('users').doc(userId).set({
+        'expenseCategories': serializableExpenseCategories,
+        'incomeCategories': serializableIncomeCategories,
+        'lastUpdated': FieldValue.serverTimestamp()
+      }, SetOptions(merge: true));
+    } catch (e) {
+      _setError(_tr('error_save_category').replaceAll('{0}', e.toString()));
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Add a new transaction
+  Future<bool> addTransaction({
+    required String note,
+    required double amount,
+    required String category,
+    required String categoryIcon,
+    required DateTime date,
+    required bool isExpense,
+  }) async {
+    _setLoading(true);
+
+    try {
+      // Find the category's key from the label
+      String categoryKey = category;
+
+      // Find the matching category to get its key
+      List<Map<String, dynamic>> categories = isExpense ? _expenseCategories : _incomeCategories;
+      for (var item in categories) {
+        if (item["label"] == category) {
+          categoryKey = item["labelKey"];
+          break;
+        }
+      }
+
+      await _databaseService.addExpense(
+        note: note,
+        amount: amount,
+        category: categoryKey, // Store the key instead of display name
+        categoryIcon: categoryIcon,
+        date: date,
+        isExpense: isExpense,
+      );
+
+      return true;
+    } catch (e) {
+      _setError(_tr('error_save_transaction').replaceAll('{0}', e.toString()));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String? message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void refreshCategoryLabels() {
+    _expenseCategories = _expenseCategories.map((category) {
+      // Update translated label for default categories
+      String labelKey = category["labelKey"] ?? "";
+      if (labelKey.startsWith("category_")) {
+        return {
+          "icon": category["icon"],
+          "label": _tr(labelKey),
+          "labelKey": labelKey
+        };
+      }
+      return category;
+    }).toList();
+
+    _incomeCategories = _incomeCategories.map((category) {
+      // Update translated label for default categories
+      String labelKey = category["labelKey"] ?? "";
+      if (labelKey.startsWith("category_")) {
+        return {
+          "icon": category["icon"],
+          "label": _tr(labelKey),
+          "labelKey": labelKey
+        };
+      }
+
+      return category;
+    }).toList();
+
+    notifyListeners();
+  }
+}
