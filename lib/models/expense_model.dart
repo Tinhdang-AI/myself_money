@@ -46,3 +46,26 @@ class ExpenseModel {
       'isExpense': isExpense,
     };
   }
+  
+ExpenseModel copyWith({
+    String? id,
+    String? userId,
+    String? note,
+    double? amount,
+    String? category,
+    String? categoryIcon,
+    DateTime? date,
+    bool? isExpense,
+  }) {
+    return ExpenseModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      note: note ?? this.note,
+      amount: amount ?? this.amount,
+      category: category ?? this.category,
+      categoryIcon: categoryIcon ?? this.categoryIcon,
+      date: date ?? this.date,
+      isExpense: isExpense ?? this.isExpense,
+    );
+  }
+}
