@@ -240,3 +240,169 @@ class TransactionUtils {
                             );
                           },
                         );
+
+                        if (picked != null && picked != selectedDate) {
+                          setState(() {
+                            selectedDate = picked;
+                            dateController.text = DateFormat('dd/MM/yyyy').format(picked);
+                          });
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: dateController,
+                          style: TextStyle(color: Colors.black),
+                          decoration: InputDecoration(
+                            labelText: context.tr('date'),
+                            suffixIcon: Icon(Icons.calendar_today, color: Colors.black),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text(context.tr('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Parse the amount in current currency and convert back to VND
+                    final amount = convertToVND(parseFormattedCurrency(amountController.text));
+                    final note = noteController.text.trim();
+
+                    if (amount <= 0) {
+                      // Show error
+                      MessageUtils.showErrorMessage(context, context.tr('invalid_amount'));
+                      return;
+                    }
+
+                    // Check if there are any changes
+                    bool hasChanges = note != expense.note ||
+                        amount != expense.amount ||
+                        !isSameDay(selectedDate, expense.date) ||
+                        selectedCategory != expense.category ||
+                        selectedCategoryIcon != expense.categoryIcon;
+
+                    // Return updated expense if there are changes
+                    if (hasChanges) {
+                      Navigator.pop(
+                        context,
+                        EditResult(
+                          note: note,
+                          amount: amount,
+                          date: selectedDate,
+                          category: selectedCategory,
+                          categoryIcon: selectedCategoryIcon,
+                          updated: true,
+                        ),
+                      );
+                    } else {
+                      Navigator.pop(
+                        context,
+                        EditResult(
+                          note: note,
+                          amount: amount,
+                          date: selectedDate,
+                          category: selectedCategory,
+                          categoryIcon: selectedCategoryIcon,
+                          updated: false,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  child: Text(context.tr('save')),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  static void _showCategorySelectionDialog(
+      BuildContext context,
+      List<Map<String, dynamic>> categoryList,
+      bool isExpense,
+      String currentCategory,
+      Function(String, String) onCategorySelected) {
+
+    final filteredCategories = categoryList.where((category) =>
+    category['isExpense'] == isExpense &&
+        category['name'] != 'category_edit'
+    ).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(isExpense
+              ? context.tr('select_category') + ' ' + context.tr('expense').toLowerCase()
+              : context.tr('select_category') + ' ' + context.tr('income').toLowerCase()),
+          backgroundColor: Colors.white,
+          content: Container(
+            width: double.maxFinite,
+            height: 300,
+            child: filteredCategories.isEmpty
+                ? Center(child: Text(context.tr('no_data')))
+                : ListView.builder(
+              shrinkWrap: true,
+              itemCount: filteredCategories.length,
+              itemBuilder: (context, index) {
+                final category = filteredCategories[index];
+                final categoryName = category['name'];
+                String displayName = categoryName;
+
+                if (categoryName.startsWith('category_')) {
+                  displayName = context.tr(categoryName);
+                }
+
+                final isSelected = displayName == currentCategory;
+
+                return ListTile(
+                  leading: Icon(
+                    IconData(int.parse(category['icon']), fontFamily: 'MaterialIcons'),
+                    color: Colors.orange,
+                  ),
+                  title: Text(
+                    displayName,
+                    style: TextStyle(color: Colors.black),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                  selected: isSelected,
+                  selectedTileColor: Colors.orange.shade50,
+                  trailing: isSelected ? Icon(Icons.check, color: Colors.green) : null,
+                  onTap: () {
+                    onCategorySelected(displayName, category['icon']);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static Future<bool?> showDeleteConfirmation(
+      BuildContext context,
+      ExpenseModel expense) {
+    String type = expense.isExpense ? context.tr('expense').toLowerCase() : context.tr('income').toLowerCase();
+    String formattedAmount = formatCurrencyWithSymbol(expense.amount);
+
+    String category = expense.category;
+    if (category.startsWith('category_')) {
+      category = context.tr(category);
+    }
