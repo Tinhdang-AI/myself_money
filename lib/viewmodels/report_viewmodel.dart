@@ -204,4 +204,238 @@ class ReportViewModel extends ChangeNotifier {
     }
   }
 
+  // Update time range
+  Future<void> updateTimeRange(bool isNext) async {
+    if (_isMonthly) {
+      // Monthly view
+      _selectedDate = DateTime(
+        _selectedDate.year,
+        isNext ? _selectedDate.month + 1 : _selectedDate.month - 1,
+      );
+    } else {
+      // Yearly view
+      _selectedDate = DateTime(
+        isNext ? _selectedDate.year + 1 : _selectedDate.year - 1,
+        _selectedDate.month,
+      );
+    }
 
+    _showingCategoryDetails = false;
+    notifyListeners();
+    await loadReportData();
+  }
+
+  // Toggle between monthly and yearly view
+  void toggleTimeFrame() {
+    _isMonthly = !_isMonthly;
+    _showingCategoryDetails = false;
+    _selectedDate = DateTime.now(); // Reset to current date
+    notifyListeners();
+    loadReportData();
+  }
+
+  // Calculate totals
+  void _calculateTotals() {
+    _expenseTotal = _expenses.fold(0, (sum, item) => sum + item.amount);
+    _incomeTotal = _incomes.fold(0, (sum, item) => sum + item.amount);
+    _netTotal = _incomeTotal - _expenseTotal;
+  }
+
+  // Hàm hỗ trợ dịch tên danh mục
+  String translateCategoryName(String category) {
+    if (category.startsWith('category_')) {
+      return tr(category);
+    }
+    return category;
+  }
+
+// Sửa phương thức _generateCategoryTotals()
+  void _generateCategoryTotals() {
+    // Generate expense category totals
+    Map<String, double> expenseTotals = {};
+    Map<String, String> expenseCategoryKeys = {}; // Lưu trữ khóa gốc
+
+    for (var item in _expenses) {
+      String displayName = translateCategoryName(item.category);
+      expenseTotals[displayName] = (expenseTotals[displayName] ?? 0) + item.amount;
+      expenseCategoryKeys[displayName] = item.category; // Lưu khóa gốc
+    }
+    _expenseCategoryTotals = expenseTotals;
+    _expenseCategoryOriginalKeys = expenseCategoryKeys; // Lưu khóa gốc
+
+    // Generate income category totals
+    Map<String, double> incomeTotals = {};
+    Map<String, String> incomeCategoryKeys = {}; // Lưu trữ khóa gốc
+
+    for (var item in _incomes) {
+      String displayName = translateCategoryName(item.category);
+      incomeTotals[displayName] = (incomeTotals[displayName] ?? 0) + item.amount;
+      incomeCategoryKeys[displayName] = item.category; // Lưu khóa gốc
+    }
+    _incomeCategoryTotals = incomeTotals;
+    _incomeCategoryOriginalKeys = incomeCategoryKeys; // Lưu khóa gốc
+  }
+
+  // Show category details
+  void showCategoryDetails(String categoryDisplayName, bool isExpense) {
+    _selectedCategory = categoryDisplayName;
+    _isCategoryExpense = isExpense;
+
+    // Lấy khóa gốc từ tên hiển thị
+    String originalCategoryKey = isExpense
+        ? _expenseCategoryOriginalKeys[categoryDisplayName] ?? categoryDisplayName
+        : _incomeCategoryOriginalKeys[categoryDisplayName] ?? categoryDisplayName;
+
+    // Lọc các giao dịch theo danh mục đã chọn (sử dụng khóa gốc)
+    _categoryTransactions = isExpense
+        ? _expenses.where((expense) => expense.category == originalCategoryKey).toList()
+        : _incomes.where((income) => income.category == originalCategoryKey).toList();
+
+    // Sắp xếp theo ngày (mới nhất trước)
+    _categoryTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+    _showingCategoryDetails = true;
+    notifyListeners();
+  }
+
+  // Go back to main report
+  void backToMainReport() {
+    _showingCategoryDetails = false;
+    notifyListeners();
+  }
+
+  // Set tab index
+  void setTabIndex(int index) {
+    _tabIndex = index;
+    notifyListeners();
+  }
+
+  // Edit transaction
+  Future<bool> editTransaction(ExpenseModel expense) async {
+    try {
+      _setLoading(true);
+
+      final result = await TransactionUtils.editTransaction(expense, _databaseService);
+
+      if (result.success && result.updatedExpense != null) {
+        ExpenseModel updatedExpense = result.updatedExpense!;
+
+        // Update in category transactions list if showing details
+        if (_showingCategoryDetails) {
+          int index = _categoryTransactions.indexWhere((item) => item.id == expense.id);
+          if (index >= 0) {
+            _categoryTransactions[index] = updatedExpense;
+          }
+
+          // If category changed or transaction type changed, remove from details view
+          if (updatedExpense.category != _selectedCategory ||
+              updatedExpense.isExpense != _isCategoryExpense) {
+            _categoryTransactions.removeWhere((item) => item.id == expense.id);
+          }
+        }
+
+        // Update in main lists
+        if (expense.isExpense) {
+          int index = _expenses.indexWhere((item) => item.id == expense.id);
+          if (index >= 0) {
+            _expenses[index] = updatedExpense;
+          }
+        } else {
+          int index = _incomes.indexWhere((item) => item.id == expense.id);
+          if (index >= 0) {
+            _incomes[index] = updatedExpense;
+          }
+        }
+
+        // Recalculate totals and category totals
+        _calculateTotals();
+        _generateCategoryTotals();
+
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError(tr('update_error'));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Delete transaction
+  Future<bool> deleteTransaction(ExpenseModel expense) async {
+    try {
+      _setLoading(true);
+
+      final result = await TransactionUtils.deleteTransaction(expense.id, _databaseService);
+
+      if (result) {
+        // Remove from category transactions if showing details
+        if (_showingCategoryDetails) {
+          _categoryTransactions.removeWhere((item) => item.id == expense.id);
+
+          // If no more transactions, go back to main report
+          if (_categoryTransactions.isEmpty) {
+            _showingCategoryDetails = false;
+          }
+        }
+
+        // Remove from main lists
+        if (expense.isExpense) {
+          _expenses.removeWhere((item) => item.id == expense.id);
+        } else {
+          _incomes.removeWhere((item) => item.id == expense.id);
+        }
+
+        // Recalculate totals and category totals
+        _calculateTotals();
+        _generateCategoryTotals();
+
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError(tr('delete_error'));
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllCategories() async {
+    try {
+      return await _databaseService.getCategories();
+    } catch (e) {
+      print("Error getting categories in viewmodel: $e");
+      return [];
+    }
+  }
+
+  // Get color for expense category
+  Color getExpenseColor(int index) {
+    return _expensecolors[index % _expensecolors.length];
+  }
+
+  // Get color for income category
+  Color getIncomeColor(int index) {
+    return _incomecolors[index % _incomecolors.length];
+  }
+
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String? message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+}
