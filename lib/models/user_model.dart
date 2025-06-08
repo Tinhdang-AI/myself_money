@@ -73,3 +73,20 @@ class CategoryModel {
     required this.iconCode,
     this.fontFamily = 'MaterialIcons',
   });
+  
+factory CategoryModel.fromMap(Map<String, dynamic> map) {
+    return CategoryModel(
+      label: map['label'] ?? '',
+      iconCode: map['iconCode'] ?? 0,
+      fontFamily: map['fontFamily'] ?? 'MaterialIcons',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'label': label,
+      'iconCode': iconCode,
+      'fontFamily': fontFamily,
+    };
+  }
+}
