@@ -406,3 +406,65 @@ class TransactionUtils {
     if (category.startsWith('category_')) {
       category = context.tr(category);
     }
+
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('confirm')),
+        backgroundColor: Colors.white,
+        content: Text(
+            context.tr('confirm_delete_transaction') + ' ' +
+                type + ' "${category}" ' +
+                context.tr('with_amount') + ' ' + formattedAmount + '?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(context.tr('delete'), style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Check if two dates are on the same day
+  static bool isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+// Result classes
+class TransactionResult {
+  final bool success;
+  final String? errorMessage;
+  final ExpenseModel? updatedExpense;
+
+  TransactionResult({
+    required this.success,
+    this.errorMessage,
+    this.updatedExpense,
+  });
+}
+
+class EditResult {
+  final String note;
+  final double amount;
+  final DateTime date;
+  final String category;
+  final String categoryIcon;
+  final bool updated;
+
+  EditResult({
+    required this.note,
+    required this.amount,
+    required this.date,
+    required this.category,
+    required this.categoryIcon,
+    required this.updated,
+  });
+}
