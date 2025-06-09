@@ -50,7 +50,6 @@ class AppLocalizations {
     }
   }
 }
-
 // Lớp hỗ trợ Flutter để tải các bản dịch
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const AppLocalizationsDelegate();
