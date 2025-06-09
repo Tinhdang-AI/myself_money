@@ -130,7 +130,7 @@ class DatabaseService {
     required DateTime date,
     required bool isExpense,
   }) async {
-    if (currentUserId == null) throw Exception('User not logged in');t
+    if (currentUserId == null) throw Exception('User not logged in');
 
     ExpenseModel expense = ExpenseModel(
       id: '',
