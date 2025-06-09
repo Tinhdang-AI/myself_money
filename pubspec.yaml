@@ -46,4 +46,11 @@ dev_dependencies:
   flutter_test:
       sdk: flutter
 
+flutter:
+  assets:
+    - assets/google_icon.png
+    - assets/logo_icon.png
+    - assets/flags/vi.png
+    - assets/flags/en.png
+
   flutter_lints: ^5.0.0
