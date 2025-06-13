@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "779152110078",
-    "project_id": "datcdtt2-eddea",
-    "storage_bucket": "datcdtt2-eddea.firebasestorage.app"
+    "project_number": "747663574887",
+    "project_id": "datatt2-52f55",
+    "storage_bucket": "datatt2-52f55.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:779152110078:android:d0bf9ad831aa9ffe51d0af",
+        "mobilesdk_app_id": "1:747663574887:android:adf1333fbc1658dfb891c2",
         "android_client_info": {
           "package_name": "com.example.myself_money"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCiPqcGWos-M9Bu61d4gn1XJUq_P5zanbc"
+          "current_key": "AIzaSyDCCbg_gcBlSSRNqNs9eIyFTyUaUHJ2ZAw"
         }
       ],
       "services": {
