@@ -39,13 +39,13 @@ dev_dependencies:
 
 
 flutter:
+    uses-material-design: true
     assets:
       - assets/google_icon.png
       - assets/logo_icon.png
       - assets/flags/vi.png
       - assets/flags/en.png
 
-uses-material-design: true
 flutter_icons:
     image_path: "assets/logo_icon.png"
     android: true
