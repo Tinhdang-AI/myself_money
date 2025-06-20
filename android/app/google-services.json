@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "779152110078",
-    "project_id": "datcdtt2-eddea",
-    "storage_bucket": "datcdtt2-eddea.firebasestorage.app"
+    "project_number": "1069169288812",
+    "project_id": "db22-63c17",
+    "storage_bucket": "db22-63c17.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:779152110078:android:d0bf9ad831aa9ffe51d0af",
+        "mobilesdk_app_id": "1:1069169288812:android:64b4a9b968ac5d78515a49",
         "android_client_info": {
           "package_name": "com.example.myself_money"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1069169288812-9ikhco1ea8js4s75q83pdd9461c16r91.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.myself_money",
+            "certificate_hash": "1e0dce6e0a2d5d1eb780d128ddbe248bdd04e7bd"
+          }
+        },
+        {
+          "client_id": "1069169288812-4m02h9q62pglb6ffssagmgr1mo8k62kd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCiPqcGWos-M9Bu61d4gn1XJUq_P5zanbc"
+          "current_key": "AIzaSyBv1YjriPCC87c8ZVXq-yrMtJtG11lbehg"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069169288812-4m02h9q62pglb6ffssagmgr1mo8k62kd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
