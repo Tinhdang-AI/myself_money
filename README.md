@@ -1,10 +1,10 @@
-# myself_money
+
 
 # Fundy Management App
 
 📱 **Giới thiệu**
 
-Myself Money App là một ứng dụng quản lý tài chính cá nhân toàn diện được phát triển bằng Flutter. Ứng dụng này giúp người dùng theo dõi và kiểm soát chi tiêu hàng ngày, thiết lập mục tiêu tiết kiệm, và phân tích mô hình chi tiêu để đưa ra các quyết định tài chính thông minh hơn.
+# Fundy Management App là một ứng dụng quản lý tài chính cá nhân toàn diện được phát triển bằng Flutter. Ứng dụng này giúp người dùng theo dõi và kiểm soát chi tiêu hàng ngày, thiết lập mục tiêu tiết kiệm, và phân tích mô hình chi tiêu để đưa ra các quyết định tài chính thông minh hơn.
 
 ✨ **Tính năng chính**
 - **Theo dõi chi tiêu**: Nhập và phân loại các khoản chi tiêu một cách dễ dàng và nhanh chóng
@@ -70,7 +70,6 @@ Myself Money App là một ứng dụng quản lý tài chính cá nhân toàn d
 - **Localization**: flutter_localizations
 
 📲 **Hướng dẫn cài đặt**
-
 
 1. **Cài đặt từ mã nguồn**:
    - Đảm bảo bạn đã cài đặt Flutter SDK
