@@ -70,8 +70,10 @@
 - **Localization**: flutter_localizations
 
 📲 **Hướng dẫn cài đặt**
+1.Cài đặt từ file APK:
+Tải file APK: Download APK
 
-1. **Cài đặt từ mã nguồn**:
+2. **Cài đặt từ mã nguồn**:
    - Đảm bảo bạn đã cài đặt Flutter SDK
    - Clone repository:  
     git clone https://github.com/Tinhdang-AI/myself_money.git
